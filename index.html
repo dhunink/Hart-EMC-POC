@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+  <html>
+  <head>
+  <title>Create a Web Map</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+
+  <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
+  <style>
+    html,body,#mapDiv,.map.container{
+      padding:0;
+      margin:0;
+      height:100%;
+    }
+	#LocateButton {
+      position: absolute;
+      top: 95px;
+      left: 20px;
+      z-index: 50;
+    }
+  </style>
+
+  <script>var dojoConfig = { parseOnLoad: true };</script>
+  <script src="http://js.arcgis.com/3.13compact/"></script>
+  
+  <script>
+  	var useWebmap = true;//For testing webmap VS scripting in the layers
+  </script>
+  
+  <script>
+  if(useWebmap)
+  {
+	//We use the webmap; the API will translate the webmap into this map
+    var map,
+    webmapId = "ee3edf3b0fb04b6dbd244395bbce0c5e";
+    
+    require([
+      "esri/map",
+	  "esri/InfoTemplate",
+      "esri/arcgis/utils",
+      "esri/dijit/LocateButton",
+	  "esri/dijit/InfoWindowLite",
+	  "dojo/dom-construct",
+      "dojo/domReady!"
+      ], 
+	  function (Map, InfoTemplate, arcgisUtils, LocateButton, InfoWindowLite, domConstruct) 
+	  {
+        arcgisUtils.createMap(webmapId, "mapDiv").then(function (response) 
+		{
+        	map = response.map;
+		
+			geoLocate = new LocateButton(
+			{
+        		map: map
+        	}, "LocateButton");
+        	geoLocate.startup();
+
+    	});
+    });
+  }
+  else
+  {
+	//We code the webmap ourselfs
+	  require([
+        "esri/map", 
+        "esri/dijit/InfoWindowLite",
+        "esri/InfoTemplate",
+        "esri/layers/FeatureLayer",
+        "dojo/dom-construct",
+        "dojo/domReady!"
+      ], function(
+          Map,
+          InfoWindowLite,
+          InfoTemplate,
+          FeatureLayer,
+          domConstruct
+         ) {
+
+        var map = new Map("mapDiv", {
+          basemap: "osm",
+          center: [-83.9244, 33.9209],
+          zoom: 9
+        });
+
+        var infoWindow = new InfoWindowLite(null, domConstruct.create("div", null, null, map.root));
+        infoWindow.startup();
+        map.setInfoWindow(infoWindow);
+
+        var template = new InfoTemplate();
+        //template.setTitle("<b>${STATE_NAME} - ${STATE_ABBR}</b>");
+		template.setTitle("<b>Test</b>");
+        //template.setContent("${STATE_NAME} is in the ${SUB_REGION} sub region.");
+		template.setContent("test content.");
+		
+		var areaLayer = new FeatureLayer("http://stext.hartemc.com:8080/arcgis/rest/services/Public/WebOutageInfo/MapServer/2", {
+			mode: FeatureLayer.MODE_ONDEMAND,
+			outFields: ["*"]
+		});
+		map.addLayer(areaLayer);
+		
+        //add a layer to the map
+		var outagesLayer = new FeatureLayer("http://stext.hartemc.com:8080/arcgis/rest/services/Public/WebOutageInfo/MapServer/1", {
+          mode: FeatureLayer.MODE_ONDEMAND,
+          infoTemplate:template,
+          outFields: ["*"],
+		  styling: true
+        });
+        map.addLayer(outagesLayer);
+
+        map.infoWindow.resize(200, 75);
+
+      });
+	  
+  }//End if useWebmap
+	
+  </script>
+
+  </head>
+
+  <body>
+    <div id="mapDiv">
+    	<div id="LocateButton"></div>
+    </div>
+  </body>
+  </html>
+
